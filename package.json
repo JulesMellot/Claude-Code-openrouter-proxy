@@ -1,0 +1,18 @@
+{
+  "name": "proxycodeclaude",
+  "version": "2.0.0",
+  "description": "Claude Code <-> OpenAI-compatible proxy (OpenRouter, OpenAI, Groq, ...) on Cloudflare Workers",
+  "private": true,
+  "type": "module",
+  "main": "worker.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8",
+    "wrangler": "^3.95.0"
+  }
+}

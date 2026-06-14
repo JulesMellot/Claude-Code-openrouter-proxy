@@ -15,14 +15,25 @@ enabled = true
 REQUIRE_PROXY_TOKEN = "0"             # "1" pour exiger PROXY_TOKEN côté client
 # PROXY_TOKEN est un Secret (cf. wrangler secret put PROXY_TOKEN)
 
+# Backend / provider (multi-provider)
+# Détecté automatiquement depuis le préfixe de clé en BYOK, sinon :
+PROVIDER = ""                         # "" | openrouter | openai | groq | deepseek | together | mistral | xai | cerebras
+UPSTREAM_BASE_URL = ""                # endpoint OpenAI-compatible custom, ex: "https://my.host/v1"
+# Clés serveur (Secrets recommandés) : OPENROUTER_API_KEY, OPENAI_API_KEY,
+# GROQ_API_KEY, DEEPSEEK_API_KEY, TOGETHER_API_KEY, MISTRAL_API_KEY, XAI_API_KEY,
+# CEREBRAS_API_KEY, UPSTREAM_API_KEY (pour UPSTREAM_BASE_URL)
+HTTP_REFERER = "https://github.com/" # classement OpenRouter
+X_TITLE = "Claude Code Proxy"
+
 # Modèles
 FORCE_MODEL = ""                      # ex: "z-ai/glm-4.5" pour forcer un modèle
 PRIMARY_MODEL = ""                    # ex: "z-ai/glm-4.5"
-FALLBACK_MODEL = ""                   # ex: "anthropic/claude-3.5-haiku"
+FALLBACK_MODEL = ""                   # ex: "anthropic/claude-3.5-haiku" (retry sur 429/5xx)
 MODEL_MAP_EXT = "{}"                  # JSON de remap, ex: {"claude-3-5-haiku-20241022":"anthropic/claude-3.5-haiku"}
 
 # Reasoning
 REASONING_EFFORT = "medium"           # low | medium | high
+MAP_REASONING = "0"                   # "1" pour exposer le reasoning en blocs "thinking"
 
 # Usage & coût
 ESTIMATE_USAGE = "1"                  # fallback si provider ne renvoie pas usage
