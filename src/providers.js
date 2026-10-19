@@ -68,7 +68,7 @@ export function detectProviderFromKey(k) {
  * Returns { name, chatUrl, modelsUrl, serverKey, ranking }.
  */
 export function resolveProvider(env, request, clientKey) {
-  const customBase = (header(request, "x-base-url") || env.UPSTREAM_BASE_URL || "").trim();
+  const customBase = (env.UPSTREAM_BASE_URL || "").trim();
   if (customBase) {
     const base = customBase.replace(/\/+$/, "");
     return {
