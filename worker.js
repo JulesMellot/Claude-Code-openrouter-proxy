@@ -95,24 +95,71 @@ export default {
     }
 
     // ---- Auth (shared) ----
-    const clientKey = header(request, "anthropic-api-key") || header(request, "x-api-key") || "";
-    const proxyToken = header(request, "proxy-token") || "";
-    const byok = isLikelyUpstreamKey(clientKey);
-    const provider = resolveProvider(env, request, byok ? clientKey : "");
+const authHeader = header(request, "authorization");
 
-    let upstreamKey = "";
-    if (byok) {
-      upstreamKey = clientKey;
-    } else {
-      if (String(env.REQUIRE_PROXY_TOKEN || "0") === "1" && proxyToken !== env.PROXY_TOKEN) {
-        return withCORS(json(anthropicError(403, "forbidden"), 403));
-      }
-      upstreamKey = provider.serverKey;
-    }
-    if (!upstreamKey) {
-      return withCORS(json(anthropicError(401, "missing_api_key"), 401));
-    }
+const bearerKey = /^Bearer\s+/i.test(authHeader)
+  ? authHeader.replace(/^Bearer\s+/i, "").trim()
+  : "";
 
+const clientKey =
+  header(request, "anthropic-api-key") ||
+  header(request, "x-api-key") ||
+  bearerKey ||
+  "";
+
+const proxyToken = header(request, "proxy-token") || "";
+
+const requireProxyToken =
+  String(env.REQUIRE_PROXY_TOKEN || "0") === "1";
+
+if (requireProxyToken) {
+  const suppliedToken = proxyToken || clientKey;
+
+  if (
+    !env.PROXY_TOKEN ||
+    !safeEqual(suppliedToken, String(env.PROXY_TOKEN))
+  ) {
+    return withCORS(
+      json(
+        anthropicError(
+          401,
+          "Invalid proxy token",
+          "authentication_error"
+        ),
+        401
+      )
+    );
+  }
+}
+
+// Server-key mode: the client key is the proxy token,
+// never the upstream provider key.
+const byok =
+  !requireProxyToken &&
+  isLikelyUpstreamKey(clientKey);
+
+const provider = resolveProvider(
+  env,
+  request,
+  byok ? clientKey : ""
+);
+
+const upstreamKey = byok
+  ? clientKey
+  : provider.serverKey;
+
+if (!upstreamKey) {
+  return withCORS(
+    json(
+      anthropicError(
+        401,
+        "Missing upstream API key",
+        "authentication_error"
+      ),
+      401
+    )
+  );
+}
     // ---- models passthrough ----
     if (url.pathname === "/v1/models" && request.method === "GET") {
       try {
