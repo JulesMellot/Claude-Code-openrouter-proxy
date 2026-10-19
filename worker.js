@@ -38,14 +38,56 @@ export default {
     }
 
     // ---- count_tokens (Anthropic-compatible) ----
-    if (request.method === "POST" && url.pathname === "/v1/messages/count_tokens") {
-      try {
-        const body = await request.json();
-        return withCORS(json({ input_tokens: estimatePromptTokensFromAnthropic(body, env) }));
-      } catch {
-        return withCORS(json(anthropicError(400, "invalid_json"), 400));
-      }
-    }
+    if (
+  request.method === "POST" &&
+  url.pathname === "/v1/messages/count_tokens"
+) {
+  const authHeader = header(request, "authorization");
+
+  const bearerKey = /^Bearer\s+/i.test(authHeader)
+    ? authHeader.replace(/^Bearer\s+/i, "").trim()
+    : "";
+
+  const suppliedToken =
+    header(request, "proxy-token") ||
+    header(request, "anthropic-api-key") ||
+    header(request, "x-api-key") ||
+    bearerKey ||
+    "";
+
+  if (
+    String(env.REQUIRE_PROXY_TOKEN || "0") === "1" &&
+    (
+      !env.PROXY_TOKEN ||
+      !safeEqual(suppliedToken, String(env.PROXY_TOKEN))
+    )
+  ) {
+    return withCORS(
+      json(
+        anthropicError(
+          401,
+          "Invalid proxy token",
+          "authentication_error"
+        ),
+        401
+      )
+    );
+  }
+
+  try {
+    const body = await request.json();
+
+    return withCORS(
+      json({
+        input_tokens: estimatePromptTokensFromAnthropic(body, env)
+      })
+    );
+  } catch {
+    return withCORS(
+      json(anthropicError(400, "invalid_json"), 400)
+    );
+  }
+}
 
     // Beyond this point only the upstream-backed routes exist.
     if (url.pathname !== "/v1/messages" && url.pathname !== "/v1/models") {
